@@ -1,0 +1,3 @@
+공개 프로젝트 일정입니다.
+1단계는 Agent Service와 Gateway 연동입니다.
+2단계는 Mock MCP Server 실행 통제입니다.

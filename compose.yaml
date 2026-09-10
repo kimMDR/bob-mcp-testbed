@@ -1,0 +1,95 @@
+services:
+  agent-service:
+    build:
+      context: ./agent-service
+    container_name: bob-agent-service
+    environment:
+      GATEWAY_URL: http://gateway:8080
+      TEST_USER_TOKEN: test-user-token
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - entry_net
+      - control_net
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  gateway:
+    build:
+      context: ./gateway
+    container_name: bob-mcp-gateway
+    environment:
+      FILE_MCP_URL: http://mock-mcp:9000
+    networks:
+      - control_net
+      - mcp_net
+    depends_on:
+      mock-mcp:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  mock-mcp:
+    build:
+      context: ./mock-mcp
+    container_name: bob-mock-mcp
+    volumes:
+      - ./fixtures:/data:ro
+    networks:
+      - mcp_net
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  entry_net:
+    driver: bridge
+
+  control_net:
+    driver: bridge
+    internal: true
+
+  mcp_net:
+    driver: bridge
+    internal: true
